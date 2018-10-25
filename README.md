@@ -2,10 +2,11 @@
 ## _Make your own favourite ebooks. Why not?_
 
 ![Alt text](https://github.com/habom2310/Ebook-making-using-Web-scrapping/blob/master/result.PNG)
+
 _It looks ordinary, but it works_
 
 # Abstract
-- I am a book worm. I read a lot of novels but sometimes, I only can read in websites, e.g truyenfull.vn, tangthuvien.vn. Reading in the website can be corrupted sometimes due to unstable internet (which is happened so often) and it hurts my eyes when I look into the screen for so long. Therefore I bought a Kindle. The only problem is ebooks. That's why I make this application (basically, every idea is based on your truly demand).
+- I am a book worm. I read a lot of novels but sometimes, I only can read in websites, e.g truyenfull.vn, tangthuvien.vn. Reading in the website can be corrupted sometimes due to unstable internet (which happens quite often) and it hurts my eyes when I look into the screen for so long. Therefore I bought a Kindle. The only problem is ebooks. That's why I make this application (basically, every idea is based on your truly demand).
 
 # Method
 1. Scrape every chapter of the novel from the website.
