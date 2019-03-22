@@ -20,7 +20,7 @@ _It looks ordinary, but it works_
 
 # Implementation
 - run `main.py`
-
+- replace `cover.jpg` by any other cover image that you want. Remember to keep the file name as `cover.jpg`.
 # Result
 - For my own use, the application can make ebook file from 2 websites: truyenfull.vn and tangthuvien.vn, they all are Vietnamese websites for reading novels. You just need to enter the link of the novel, press start, wait and you will have a DIY ebook.
 
