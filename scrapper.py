@@ -8,78 +8,64 @@ from bs4 import BeautifulSoup
 import requests
 import time
 import os
-
-
+from selenium import webdriver
 
 class Scrapper():
     
     def __init__(self, link, saveFolder):
         self.link = link
         self.save_folder = saveFolder
-        self.chap_num = 0
+        #self.chap_num = 0
         self.chap_progress = 0
         
         web = self.link.split('/')[2]
-        
+        print(web)
         if "full" in web:
             self.w = 0
-        else:
+        elif "tangthuvien" in web:
             self.w = 1
-        
+        elif "webtruyen" in web:
+            self.w = 2
+        elif "sstruyen" in web:
+            self.w = 3
+        elif "falun" in web:
+            self.w = 4
     
-    def get_links(self, link):
-    
+    def get_infos(self, link):
+        #truyenfull
         if(self.w == 0):
-        
             novel_name = link.split('/')[3]
-            page = requests.get(link)
-            print(link)
+            page = requests.get(link,verify=False)
             soup = BeautifulSoup(page.content, 'html.parser')
-            arrow = soup.find("span", attrs = {'class':'arrow'})
-            if(arrow != None):
-                last_page = arrow.parent
-                last_page_link = last_page['href']
-                
-                page2 = requests.get(last_page_link)
-                soup2 = BeautifulSoup(page2.content, 'html.parser')
-                
-                a = soup2.find_all('span', attrs = {'class':'chapter-text'})
-                b = a[-1].parent
-                last_chap_link = b['href']
-                chapter_number = last_chap_link.split('/')[4].split('-')[1]
-                self.chap_num = chapter_number
-                return novel_name, chapter_number
-                
-            else:
-                last_p = soup.find('ul',{'class':'pagination pagination-sm'})
-                if(last_p != None):
-                    last_p_link = last_p.find_all('li')[-2].find('a')['href']
-                    p = requests.get(last_p_link)
-                    s = BeautifulSoup(p.content, 'html.parser')
-                    
-                    a = s.find_all('span', attrs = {'class':'chapter-text'})
-                    b = a[-1].parent
-                    last_chap_link = b['href']
-                    chapter_number = last_chap_link.split('/')[4].split('-')[1]
-                    self.chap_num = chapter_number
-                    return novel_name, chapter_number
-                else:
-                    a = soup.find_all('span', attrs = {'class':'chapter-text'})
-                    b = a[-1].parent
-                    last_chap_link = b['href']
-                    chapter_number = last_chap_link.split('/')[4].split('-')[1]
-                    self.chap_num = chapter_number
-                    return novel_name, chapter_number
-        else:
-            home_page = requests.get(link)
-            soup_home = BeautifulSoup(home_page.content, 'html.parser')
-            link_lastchapter = soup_home.find('div',{'class':'catalog-content-wrap'}).find('div',{'class':'volume'}).find_all('li')[0].find('a').get('href')
-            novel_name = link_lastchapter.split('/')[-2]
-            a = link_lastchapter.split('/')[-1].split('-')
-            chapter_number = a[1]
-            self.chap_num = chapter_number
-            return novel_name, chapter_number
-    
+            first_chap = str(soup.find(class_="list-chapter").a["href"])
+            return novel_name, first_chap
+        #tang thu vien            
+        elif(self.w == 1):
+            novel_name = link.split('/')[4]
+            page = requests.get(link,verify=False)
+            soup = BeautifulSoup(page.content, 'html.parser')
+            first_chap = soup.find(id="max-volume").a["href"]
+            return novel_name, first_chap
+        #webtruyen
+        elif(self.w == 2):
+            novel_name = link.split('/')[3]
+            page = requests.get(link,verify=False)
+            soup = BeautifulSoup(page.content, 'html.parser')
+            first_chap = str(soup.find(id="divtab").a["href"])
+            return novel_name, first_chap
+        elif(self.w == 3):
+            novel_name = link.split('/')[4]
+            page = requests.get(link,verify=False)
+            soup = BeautifulSoup(page.content, 'html.parser')
+            first_chap = "http://sstruyen.com" + str(soup.find_all(class_="chuongmoi")[-1].a["href"])
+            return novel_name, first_chap
+        elif(self.w == 4):
+            novel_name = link.split('/')[4]
+            page = requests.get(link,verify=False)
+            soup = BeautifulSoup(page.content, 'html.parser')
+            first_chap = soup.find(class_="mybody").p.a["href"]
+            return novel_name, first_chap
+            
     
                 
     def content_opf_def(self, novel_name):
@@ -160,11 +146,9 @@ class Scrapper():
 
 
     def run(self):
-            novel_name, chap_number = self.get_links(self.link)
+            novel_name, first_chap = self.get_infos(self.link)
             self.novelname = novel_name
             
-            
-            print(chap_number)
             #cac file ko thay doi gi ca
             cover_img = b''
             with open('cover.jpg',mode ="rb") as file:
@@ -197,36 +181,117 @@ class Scrapper():
             if not os.path.exists(new_dir + "META-INF"):
                 os.makedirs(new_dir +"META-INF")
             
-            for chapter in range(1,int(chap_number)): 
+
+            self.next_chap = first_chap
+            self.has_next_chapter = 1
+            chapter = 0
+            while(self.has_next_chapter==1):
                 self.chap_progress = chapter
                 chap = ""
                 title_text = ""
+                #truyenfull
                 if(self.w==0):
-                    time.sleep(0.5)
-                    link = "https://truyenfull.vn/"+ novel_name +"/chuong-" + str(chapter) +"/"
-                    page = requests.get(link)
-                    print(link)
-                    # raw_html = simple_get(link)
-                    soup = BeautifulSoup(page.content, 'html.parser')
-                
-                    #title = str(soup.find("h2"))
-                    title_text = soup.find("h2").get_text()
-                
-                    chap = str(soup.find(class_="chapter-c"))
-                else:
-                    link = 'https://truyen.tangthuvien.vn/doc-truyen/'+novel_name+'/chuong-' + str(chapter) + "/"
-                    print(link)
-                    page = requests.get(link)
-                    soup = BeautifulSoup(page.content, 'html.parser')
+                    time.sleep(0.4)
+                    print(self.next_chap)
+                    chap_page = requests.get(self.next_chap,verify=False)
+                    chap_soup = BeautifulSoup(chap_page.content, 'html.parser')
+                    
+                    title_text = chap_soup.find("h2").get_text()
+                    chap = str(chap_soup.find(class_="chapter-c"))   
+                    
+                    next_button = chap_soup.find(id="next_chap")
+                    if("disabled" in str(next_button)):
+                        self.has_next_chapter = 0
+                        break
+                    
+                    self.next_chap = str(next_button["href"])
                     
                     
-                    title_text = soup.find("h2").get_text()
-                    b = soup.find('div',{'class':'chapter-c-content'})
+                #tangthuvien
+                elif(self.w==1):
+                    print(self.next_chap)
+                    chap_page = requests.get(self.next_chap,verify=False)
+                    chap_soup = BeautifulSoup(chap_page.content, 'html.parser')
+                    
+                    lst = self.next_chap.split("-")
+                    lst[-1] = str(int(lst[-1])+1)
+                    self.next_chap = "-".join(lst)
+                    
+                    b = chap_soup.find('div',{'class':'chapter-c-content'})
+                    if(b==None):
+                        self.has_next_chapter = 0
+                        break
                     children = b.findChildren("div" , recursive=False)
                     chap = "<p> "+'\n' 
                     chap = chap + "    " + children[0].get_text().replace("\r\n","<br>") + '\n' 
                     chap = chap + "    </p>" 
-            
+                    title_text = str(chap_soup.find("h2").get_text())
+                    
+                #webtruyen
+                elif(self.w==2):
+                    print(self.next_chap)
+                    chap_page = requests.get(self.next_chap,verify=False)
+                    chap_soup = BeautifulSoup(chap_page.content, 'html.parser')
+                    
+                    title_text = str(chap_soup.find("h3").get_text())
+                    chap = str(chap_soup.find(id="divcontent"))   
+                    
+                    next_button = chap_soup.find(id="nextchap")
+                    if(next_button==None):
+                        self.has_next_chapter = 0
+                        break
+                    
+                    self.next_chap = str(next_button["href"])
+                    
+                    
+                #sstruyen
+                elif(self.w==3):
+                    print(self.next_chap)
+                    options = webdriver.ChromeOptions()
+                    options.add_argument('headless')
+                    
+                    browser = webdriver.Chrome(r"D:\11102018\Ha_Nguyen\workspace\project\chromedriver.exe", chrome_options=options)
+                    # browser = webdriver.PhantomJS(r"D:\11102018\Ha_Nguyen\workspace\project\phantomjs-2.1.1-windows\bin\phantomjs.exe")
+                    browser.get(self.next_chap)
+                    html = browser.page_source
+                    
+                    chap_soup = BeautifulSoup(html, 'html.parser')
+                    
+                    title_text = str(chap_soup.find("h3").get_text())
+                    chap = str(chap_soup.find(id="chapt-content"))
+                
+                    next_button = chap_soup.find(class_="mybutton btnNext")
+                    if(next_button==None):
+                        self.has_next_chapter = 0
+                        break
+                    
+                    self.next_chap = str(next_button["href"])
+                
+                #falun
+                elif(self.w==4):
+                    prefix = r"https://vi.falundafa.org/book/zfl_html/"
+                    self.next_chap = prefix + self.next_chap
+                    print(self.next_chap)
+                    chap_page = requests.get(self.next_chap,verify=False)
+                    chap_soup = BeautifulSoup(chap_page.content, 'html.parser')
+                    
+                    title_text = str(chap_soup.find("h2").get_text())
+                    chap = ""
+                    parts = chap_soup.find_all("p")
+                    for p in parts:
+                        chap = chap + p.get_text()
+                    
+                    buttons = chap_soup.find_all("img")
+                    
+                    for i,button in enumerate(buttons):
+                        if "right" not in str(button):
+                            if i == len(buttons)-1:
+                                self.has_next_chapter = 0
+                        else:
+                            self.next_chap = button.parent["href"]
+                            break
+                            
+                    
                 file_name = "Text/C"+str(chapter)+".html" 
                 
                 html = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>'+ '\n' 
@@ -263,6 +328,7 @@ class Scrapper():
                 with open(new_dir + file_name, encoding='utf-8',mode ="w") as file:
                     file.write(html)
                 
+                chapter = chapter + 1
             
             #luu file content.opf
             with open(new_dir + 'content.opf', encoding='utf-8',mode ="w") as file:

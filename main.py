@@ -123,11 +123,11 @@ class Example(QMainWindow):
     def getProgress(self):
         self.t2 = threading.Timer(1.0, self.getProgress)
         self.t2.start()
-        self.chap = self.scr.chap_num
+        #self.chap = self.scr.chap_num
    
         self.progress = self.scr.chap_progress
-        print(str(self.progress) + '/' + str(self.chap))
-        self.label_status.setText("Progress: " + str(self.progress) + '/' + str(self.chap))
+        #print("chap: " + str(self.progress))
+        self.label_status.setText("Progress: " + str(self.progress))
         
         
     def zip_File(self, saveFolder, novel_name):
